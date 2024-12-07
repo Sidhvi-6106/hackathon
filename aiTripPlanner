@@ -1,0 +1,617 @@
+from flask import Flask, render_template_string, request
+import webbrowser
+
+app = Flask(__name__)
+
+# A dictionary of places and hotels for different states in India
+india_travel_data = {
+    "Andhra Pradesh": {
+        "famous_places": [
+            {"name": "Tirupati", "image_url": "https://example.com/tirupati.jpg"},
+            {"name": "Visakhapatnam", "image_url": "https://example.com/visakhapatnam.jpg"},
+            {"name": "Araku Valley", "image_url": "https://example.com/araku.jpg"}
+        ],
+        "hotels": {
+            "family": [
+                {"name": "Taj Gateway Hotel", "image_url": "https://example.com/taj_gateway.jpg"},
+                {"name": "Novotel Visakhapatnam", "image_url": "https://example.com/novotel_visakhapatnam.jpg"}
+            ],
+            "solo": [
+                {"name": "The Park Visakhapatnam", "image_url": "https://example.com/the_park.jpg"},
+                {"name": "Hotel Winsar Park", "image_url": "https://example.com/winsar_park.jpg"}
+            ],
+            "friends": [
+                {"name": "Beach Park Resort", "image_url": "https://example.com/beach_park_resort.jpg"},
+                {"name": "Bheemili Resort", "image_url": "https://example.com/bheemili_resort.jpg"}
+            ]
+        }
+    },
+    "Delhi": {
+        "famous_places": [
+            {"name": "Red Fort", "image_url": "https://example.com/red_fort.jpg"},
+            {"name": "Qutub Minar", "image_url": "https://example.com/qutub_minar.jpg"},
+            {"name": "India Gate", "image_url": "https://example.com/india_gate.jpg"}
+        ],
+        "hotels": {
+            "family": [
+                {"name": "The Leela Palace", "image_url": "https://example.com/the_leela_palace.jpg"},
+                {"name": "ITC Maurya", "image_url": "https://example.com/itc_maurya.jpg"}
+            ],
+            "solo": [
+                {"name": "The Imperial", "image_url": "https://example.com/the_imperial.jpg"},
+                {"name": "Radisson Blu", "image_url": "https://example.com/radisson_blu.jpg"}
+            ],
+            "friends": [
+                {"name": "The Park New Delhi", "image_url": "https://example.com/the_park_newdelhi.jpg"},
+                {"name": "Paatra Boutique Hotel", "image_url": "https://example.com/paatra_boutique.jpg"}
+            ]
+        }
+    },
+    "Hyderabad": {
+        "famous_places": [
+            {"name": "Charminar", "image_url": "https://example.com/charminar.jpg"},
+            {"name": "Golconda Fort", "image_url": "https://example.com/golconda_fort.jpg"},
+            {"name": "Hussain Sagar Lake", "image_url": "https://example.com/hussain_sagar.jpg"},
+            {"name": "Ramoji Film City", "image_url": "https://example.com/ramoji_film_city.jpg"},
+            {"name": "Salar Jung Museum", "image_url": "https://example.com/salar_jung_museum.jpg"},
+            {"name": "Birla Mandir", "image_url": "https://example.com/birla_mandir.jpg"}
+        ],
+        "hotels": {
+            "family": [
+                {"name": "Taj Falaknuma Palace", "image_url": "https://example.com/taj_falaknuma.jpg"},
+                {"name": "The Westin Hyderabad Mindspace", "image_url": "https://example.com/westin_mindspace.jpg"}
+            ],
+            "solo": [
+                {"name": "Hyatt Place Hyderabad Banjara Hills", "image_url": "https://example.com/hyatt_place.jpg"},
+                {"name": "Marriott Hotel & Convention Centre", "image_url": "https://example.com/marriott_hyderabad.jpg"}
+            ],
+            "friends": [
+                {"name": "Novotel Hyderabad Convention Centre", "image_url": "https://example.com/novotel_convention.jpg"},
+                {"name": "Trident Hyderabad", "image_url": "https://example.com/trident_hyderabad.jpg"}
+            ]
+        }
+    },
+    "Warangal": {
+        "famous_places": [
+            {"name": "Warangal Fort", "https://www.google.com/url?sa=i&url=https%3A%2F%2Ftravelsetu.com%2Fguide%2Fwarangal-fort-tourism&psig=AOvVaw1tEE9z5q-n0QF4Pu4WOLpc&ust=1733623360232000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCPDQzpTflIoDFQAAAAAdAAAAABAE": "https://example.com/warangal_fort.jpg"},
+            {"name": "Thousand Pillar Temple", "image_url": "https://example.com/thousand_pillar_temple.jpg"},
+            {"name": "Bhadrakali Temple", "image_url": "https://example.com/bhadrakali_temple.jpg"},
+            {"name": "Ramappa Temple", "image_url": "https://example.com/ramappa_temple.jpg"},
+            {"name": "Pakhal Lake", "image_url": "https://example.com/pakhal_lake.jpg"}
+        ],
+        "hotels": {
+            "family": [
+                {"name": "Hotel Ashoka", "image_url": "https://example.com/hotel_ashoka.jpg"},
+                {"name": "Vishnu Residency", "image_url": "https://example.com/vishnu_residency.jpg"}
+            ],
+            "solo": [
+                {"name": "Landmark Hotel", "image_url": "https://example.com/landmark_hotel.jpg"},
+                {"name": "Hotel Suprabha", "image_url": "https://example.com/suprabha.jpg"}
+            ],
+            "friends": [
+                {"name": "Haritha Kakatiya Hotel", "image_url": "https://example.com/haritha_kakatiya.jpg"},
+                {"name": "Ratna Hotel", "image_url": "https://example.com/ratna_hotel.jpg"}
+            ]
+        }
+    },
+    "Mahabubabad": {
+        "famous_places": [
+            {"name": "Pandavula Gutta", "image_url": "https://example.com/pandavula_gutta.jpg"},
+            {"name": "Bayyaram Lake", "image_url": "https://example.com/bayyaram_lake.jpg"},
+            {"name": "Bogatha Waterfalls", "image_url": "https://example.com/bogatha_waterfalls.jpg"},
+            {"name": "Kothagattu Temple", "image_url": "https://example.com/kothagattu_temple.jpg"}
+        ],
+        "hotels": {
+            "family": [
+                {"name": "Hotel Sridevi", "image_url": "https://example.com/hotel_sridevi.jpg"},
+                {"name": "Sri Sai Residency", "image_url": "https://example.com/sri_sai_residency.jpg"}
+            ],
+            "solo": [
+                {"name": "Haritha Hotel Mahabubabad", "image_url": "https://example.com/haritha_hotel_mahabubabad.jpg"},
+                {"name": "Hotel Laxmi Nivas", "image_url": "https://example.com/laxmi_nivas.jpg"}
+            ],
+            "friends": [
+                {"name": "Sunshine Resort", "image_url": "https://example.com/sunshine_resort.jpg"},
+                {"name": "Green Valley Lodge", "image_url": "https://example.com/green_valley_lodge.jpg"}
+            ]
+        }
+    },
+    "Khammam": {
+        "famous_places": [
+            {"name": "Khammam Fort", "image_url": "https://example.com/khammam_fort.jpg"},
+            {"name": "Parnasala", "image_url": "https://example.com/parnasala.jpg"},
+            {"name": "Kinnerasani Wildlife Sanctuary", "image_url": "https://example.com/kinnerasani_sanctuary.jpg"},
+            {"name": "Lakaram Lake", "image_url": "https://example.com/lakaram_lake.jpg"},
+            {"name": "Bhadrachalam Temple", "image_url": "https://example.com/bhadrachalam_temple.jpg"}
+        ],
+        "hotels": {
+            "family": [
+                {"name": "Haritha Hotel Khammam", "image_url": "https://example.com/haritha_khammam.jpg"},
+                {"name": "Hotel Sindhu Residency", "image_url": "https://example.com/sindhu_residency.jpg"}
+            ],
+            "solo": [
+                {"name": "Hotel Vaishnavi Residency", "image_url": "https://example.com/vaishnavi_residency.jpg"},
+                {"name": "Hotel Satya Palace", "image_url": "https://example.com/satya_palace.jpg"}
+            ],
+            "friends": [
+                {"name": "Hotel Swagat", "image_url": "https://example.com/hotel_swagat.jpg"},
+                {"name": "Hotel Grand Inn", "image_url": "https://example.com/grand_inn.jpg"}
+            ]
+        }
+    },
+
+    "Maharashtra": {
+        "famous_places": [
+            {"name": "Gateway of India", "image_url": "https://example.com/gateway_of_india.jpg"},
+            {"name": "Ajanta and Ellora Caves", "image_url": "https://example.com/ajanta_ellora.jpg"},
+            {"name": "Marine Drive", "image_url": "https://example.com/marine_drive.jpg"}
+        ],
+        "hotels": {
+            "family": [
+                {"name": "Taj Mahal Palace", "image_url": "https://example.com/taj_mahal_palace.jpg"},
+                {"name": "ITC Maratha", "image_url": "https://example.com/itc_maratha.jpg"}
+            ],
+            "solo": [
+                {"name": "Hotel Marine Plaza", "image_url": "https://example.com/hotel_marine_plaza.jpg"},
+                {"name": "The Oberoi Mumbai", "image_url": "https://example.com/the_oberoi.jpg"}
+            ],
+            "friends": [
+                {"name": "The Resort Madh-Marve", "image_url": "https://example.com/the_resort.jpg"},
+                {"name": "Radisson Blu Karjat", "image_url": "https://example.com/radisson_karjat.jpg"}
+            ]
+        }
+    },
+    "Karnataka": {
+        "famous_places": [
+            {"name": "Hampi", "image_url": "https://example.com/hampi.jpg"},
+            {"name": "Coorg", "image_url": "https://example.com/coorg.jpg"},
+            {"name": "Mysore Palace", "image_url": "https://example.com/mysore_palace.jpg"}
+        ],
+        "hotels": {
+            "family": [
+                {"name": "The Windflower Resorts", "image_url": "https://example.com/windflower_resorts.jpg"},
+                {"name": "Orange County Coorg", "image_url": "https://example.com/orange_county.jpg"}
+            ],
+            "solo": [
+                {"name": "Mango Hotels", "image_url": "https://example.com/mango_hotels.jpg"},
+                {"name": "Hotel Royal Orchid", "image_url": "https://example.com/royal_orchid.jpg"}
+            ],
+            "friends": [
+                {"name": "Jungle Lodges Kabini", "image_url": "https://example.com/kabini_lodges.jpg"},
+                {"name": "Zostel Bangalore", "image_url": "https://example.com/zostel.jpg"}
+            ]
+        }
+    },
+    "Tamil Nadu": {
+        "famous_places": [
+            {"name": "Mahabalipuram", "image_url": "https://example.com/mahabalipuram.jpg"},
+            {"name": "Ooty", "image_url": "https://example.com/ooty.jpg"},
+            {"name": "Rameshwaram", "image_url": "https://example.com/rameshwaram.jpg"}
+        ],
+        "hotels": {
+            "family": [
+                {"name": "The Gateway Hotel Madurai", "image_url": "https://example.com/gateway_madurai.jpg"},
+                {"name": "Savoy - IHCL SeleQtions", "image_url": "https://example.com/savoy.jpg"}
+            ],
+            "solo": [
+                {"name": "Sterling Ooty Fern Hill", "image_url": "https://example.com/sterling_ooty.jpg"},
+                {"name": "Hotel Accord Metropolitan", "image_url": "https://example.com/accord_metropolitan.jpg"}
+            ],
+            "friends": [
+                {"name": "Zostel Ooty", "image_url": "https://example.com/zostel_ooty.jpg"},
+                {"name": "Sterling Kodai Valley", "image_url": "https://example.com/kodai_valley.jpg"}
+            ]
+        }
+    },
+    "Rajasthan": {
+        "famous_places": [
+            {"name": "Jaipur - Hawa Mahal", "image_url": "https://example.com/hawa_mahal.jpg"},
+            {"name": "Udaipur - Lake Palace", "image_url": "https://example.com/lake_palace.jpg"},
+            {"name": "Jaisalmer - Thar Desert", "image_url": "https://example.com/thar_desert.jpg"}
+        ],
+        "hotels": {
+            "family": [
+                {"name": "The Oberoi Udaivilas", "image_url": "https://example.com/udaivilas.jpg"},
+                {"name": "ITC Rajputana", "image_url": "https://example.com/itc_rajputana.jpg"}
+            ],
+            "solo": [
+                {"name": "Zostel Jaipur", "image_url": "https://example.com/zostel_jaipur.jpg"},
+                {"name": "Jaisalmer Marriott Resort", "image_url": "https://example.com/marriott_jaisalmer.jpg"}
+            ],
+            "friends": [
+                {"name": "Sam Sand Dunes Camp", "image_url": "https://example.com/sand_dunes_camp.jpg"},
+                {"name": "Bhanwar Singh Palace", "image_url": "https://example.com/bhanwar_singh.jpg"}
+            ]
+        }
+    },
+    "Jammu & Kashmir": {
+        "famous_places": [
+            {"name": "Srinagar - Dal Lake", "image_url": "https://example.com/dal_lake.jpg"},
+            {"name": "Gulmarg", "image_url": "https://example.com/gulmarg.jpg"},
+            {"name": "Pahalgam", "image_url": "https://example.com/pahalgam.jpg"}
+        ],
+        "hotels": {
+            "family": [
+                {"name": "Vivanta Dal View", "image_url": "https://example.com/vivanta_dal.jpg"},
+                {"name": "Khyber Himalayan Resort", "image_url": "https://example.com/khyber.jpg"}
+            ],
+            "solo": [
+                {"name": "Hotel Heevan", "image_url": "https://example.com/heevan.jpg"},
+                {"name": "The Lalit Grand Palace", "image_url": "https://example.com/lalit_palace.jpg"}
+            ],
+            "friends": [
+                {"name": "Houseboats on Dal Lake", "image_url": "https://example.com/houseboats.jpg"},
+                {"name": "Pine Spring Resort", "image_url": "https://example.com/pine_spring.jpg"}
+            ]
+        }
+    }
+}
+
+
+@app.route('/')
+def index():
+    return render_template_string(index_html)
+
+@app.route('/suggest', methods=['POST'])
+def suggest():
+    place = request.form['place']
+    budget = float(request.form['budget'])
+    travel_style = request.form['travel_style'].lower()
+
+    # Check if the place is valid
+    if place not in india_travel_data:
+        return render_template_string(index_html, message="Sorry, we don't have travel data for that place.")
+    
+    # Get data for the place
+    place_data = india_travel_data[place]
+
+    # Get famous places and suggested hotels
+    famous_places = place_data["famous_places"]
+    suggested_hotels = place_data["hotels"].get(travel_style, [])
+
+    # Filter hotels based on budget
+    budget_suggested_hotels = [hotel for hotel in suggested_hotels if budget >= 5000]  # Example budget filter
+
+    return render_template_string(result_html, 
+                           place=place,
+                           famous_places=famous_places,
+                           hotels=budget_suggested_hotels,
+                           travel_style=travel_style,
+                           budget=budget)
+
+# HTML templates
+index_html = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Suggestion</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #fff;
+            letter-spacing: 1px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        label {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        select, input {
+            padding: 15px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            border: 2px solid #444;
+            outline: none;
+            background-color: #222;
+            color: #fff;
+        }
+
+        select:focus, input:focus {
+            border-color: #667eea;
+            background-color: #333;
+        }
+
+        button {
+            padding: 15px;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 8px;
+            background-color: #28a745;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            background-color: #218838;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .message {
+            margin-top: 20px;
+            color: #f44336;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        ul li {
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .place-img, .hotel-img {
+            width: 200px;
+            height: auto;
+            margin-top: 10px;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            button {
+                font-size: 1rem;
+                padding: 12px;
+            }
+
+            .container {
+                padding: 20px;
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Travel Destination Suggestions</h1>
+        <form action="/suggest" method="POST">
+            <label for="place">Choose a place:</label>
+            <select name="place" id="place">
+                <option value="Andhra Pradesh">Andhra Pradesh</option>
+                <option value="Delhi">Delhi</option>
+                <option value="Hyderabad">Hyderabad</option>
+                <option value="Khammam">Khammam</option>
+                <option value="Mahabubabad">Mahabubabad</option>
+                <option value="Warangal">Warangal</option>
+                <option value="Maharashtra">Maharashtra</option>
+                <option value="Karnataka">Karnataka</option>
+                <option value="Tamil Nadu">Tamil Nadu</option>
+                <option value="Rajasthan">Rajasthan</option>
+                <option value="Jammu & Kashmir">Jammu & Kashmir</option>
+            </select>
+
+            <label for="budget">Enter your budget (INR):</label>
+            <input type="number" name="budget" id="budget" required>
+
+            <label for="travel_style">Are you traveling with family, solo, or friends?</label>
+            <select name="travel_style" id="travel_style">
+                <option value="family">Family</option>
+                <option value="solo">Solo</option>
+                <option value="friends">Friends</option>
+            </select>
+
+            <button type="submit">Get Suggestions</button>
+        </form>
+
+        {% if message %}
+            <div class="message">{{ message }}</div>
+        {% endif %}
+    </div>
+</body>
+</html>
+
+"""
+
+result_html = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Suggestions for {{ place }}</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            margin-top: 200px;
+            height: 120%;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            max-width: 1000px;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #fff;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            color: #ddd;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+            margin-bottom: 30px;
+        }
+
+        ul li {
+            margin-bottom: 25px;
+            font-size: 1.2rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .place-img, .hotel-img {
+            width: 220px;
+            height: auto;
+            border-radius: 8px;
+            margin-top: 15px;
+            transition: transform 0.3s ease;
+        }
+
+        .place-img:hover, .hotel-img:hover {
+            transform: scale(1.05);
+        }
+
+        a {
+            display: block;
+            margin-top: 30px;
+            font-size: 1.2rem;
+            color: #28a745;
+            text-decoration: none;
+            font-weight: bold;
+            border: 2px solid #28a745;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        a:hover {
+            background-color: #28a745;
+            color: #fff;
+        }
+
+        p {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #ffd700;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                width: 90%;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+
+            a {
+                font-size: 1rem;
+                padding: 8px 16px;
+            }
+
+            .place-img, .hotel-img {
+                width: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Suggested Places and Hotels for Your Trip to {{ place }}</h1>
+
+        <h2>Famous Places to Visit:</h2>
+        <ul>
+            {% for place in famous_places %}
+                <li>
+                    <strong>{{ place.name }}</strong>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <h2>Suggested Hotels for Your Travel Style ({{ travel_style }}):</h2>
+        <ul>
+            {% for hotel in hotels %}
+                <li>
+                    <strong>{{ hotel.name }}</strong>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <p><strong>Your budget: ₹{{ budget }}</strong></p>
+        <a href="/">Go Back</a>
+    </div>
+</body>
+</html>
+
+"""
+
+if __name__ == '__main__':
+    app.run(debug=True)
